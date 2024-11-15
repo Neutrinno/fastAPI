@@ -1,5 +1,5 @@
-from sqlalchemy import select, Result, update
-from fastapi import FastAPI, Depends
+from sqlalchemy import select, Result, update, delete
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import declarative_base
 from src.config import DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_NAME
@@ -65,3 +65,17 @@ async def update_transaction(transaction_id: int, new_transition: TransactionsCr
     updated_transaction = result.scalar_one()
 
     return updated_transaction
+
+@app.delete("/transactions/{transaction_id}", response_model=TransactionsRead)
+async def delete_transaction(transaction_id: int, session: AsyncSession = Depends(get_db)):
+    statement = delete(Transaction).where(Transaction.id == transaction_id)
+    try:
+        deleted_transaction = await session.execute(statement)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to delete transaction from database")
+    if deleted_transaction:
+        await session.commit()
+        return {"massage": "Transaction deleted successfully"}
+    else:
+        return HTTPException(status_code=404, detail="Transaction not found")
