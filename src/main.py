@@ -1,4 +1,4 @@
-from sqlalchemy import select, Result
+from sqlalchemy import select, Result, update
 from fastapi import FastAPI, Depends
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import declarative_base
@@ -38,13 +38,30 @@ async def get_transaction(transaction_id: int,  session: AsyncSession = Depends(
     return await session.get(Transaction, transaction_id)
 
 @app.post("/transactions/create", response_model=TransactionsRead)
-async def create_transactions(
-    new_transition: TransactionsCreate, 
-    session: AsyncSession = Depends(get_db)
-):
+async def create_transactions(new_transition: TransactionsCreate, session: AsyncSession = Depends(get_db)):
+
     transaction = Transaction(**new_transition.dict())
     session.add(transaction)
     await session.commit()
     await session.refresh(transaction)
     return transaction
 
+
+@app.put("/transactions/{transaction_id}", response_model=TransactionsRead)
+async def update_transaction(transaction_id: int, new_transition: TransactionsCreate, session: AsyncSession = Depends(get_db)):
+
+    statement = update(Transaction).where(Transaction.id == transaction_id).values(
+        date=new_transition.date,
+        amount=new_transition.amount,
+        category=new_transition.category,
+        description=new_transition.description
+    )
+
+    await session.execute(statement)
+    await session.commit()
+
+    select_stmt = select(Transaction).where(Transaction.id == transaction_id)
+    result = await session.execute(select_stmt)
+    updated_transaction = result.scalar_one()
+
+    return updated_transaction
