@@ -19,7 +19,7 @@ class CategoriesEnum(str, enum.Enum):
 
 class TransactionsBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    date: datetime = Field(default_factory=lambda: datetime.now(datetime.timezone.utc))
+    date: datetime
     amount: Decimal = Field(gt=0)
     category: CategoriesEnum = Field(default=CategoriesEnum.Miscellaneous)
     description: Optional[str] = None

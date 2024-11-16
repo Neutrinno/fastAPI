@@ -9,7 +9,7 @@ from src.schemas import TransactionsCreate, TransactionsRead
 DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 engine = create_async_engine(url=DATABASE_URL)
-async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
+async_session_maker = async_sessionmaker(engine, expire_on_commit=False, echo = True)
 
 Base = declarative_base()
 
@@ -21,10 +21,6 @@ async def get_db():
             yield session
         finally:
             await session.close()
-
-@app.get("/")
-async def hello():
-    return {"message": "Здарова, заебал!"}
 
 @app.get("/transactions", response_model=list[TransactionsRead])
 async def get_transactions(session: AsyncSession = Depends(get_db)):
@@ -66,16 +62,21 @@ async def update_transaction(transaction_id: int, new_transition: TransactionsCr
 
     return updated_transaction
 
-@app.delete("/transactions/{transaction_id}", response_model=TransactionsRead)
+
+@app.delete("/transactions/{transaction_id}")
 async def delete_transaction(transaction_id: int, session: AsyncSession = Depends(get_db)):
+
+    result = await session.execute(select(Transaction).where(Transaction.id == transaction_id))
+    transaction = result.scalars().first()
+
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
     statement = delete(Transaction).where(Transaction.id == transaction_id)
     try:
-        deleted_transaction = await session.execute(statement)
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to delete transaction from database")
-    if deleted_transaction:
+        await session.execute(statement)
         await session.commit()
-        return {"massage": "Transaction deleted successfully"}
-    else:
-        return HTTPException(status_code=404, detail="Transaction not found")
+        return {"message": "Transaction deleted successfully"}
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail="Failed to delete transaction from database")
