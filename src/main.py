@@ -81,3 +81,4 @@ async def delete_transaction(transaction_id: int, session: AsyncSession = Depend
         await session.rollback()
         raise HTTPException(status_code=500, detail="Failed to delete transaction from database")
 
+
