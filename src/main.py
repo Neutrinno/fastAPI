@@ -66,15 +66,16 @@ async def update_transaction(transaction_id: int, new_transition: TransactionsCr
 @app.delete("/transactions/{transaction_id}")
 async def delete_transaction(transaction_id: int, session: AsyncSession = Depends(get_db)):
 
-    result = await session.execute(select(Transaction).where(Transaction.id == transaction_id))
+    statement = select(Transaction).where(Transaction.id == transaction_id)
+    result = await session.execute(statement)
     transaction = result.scalars().first()
 
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
 
-    statement = delete(Transaction).where(Transaction.id == transaction_id)
+    stmt = delete(Transaction).where(Transaction.id == transaction_id)
     try:
-        await session.execute(statement)
+        await session.execute(stmt)
         await session.commit()
         return {"message": "Transaction deleted successfully"}
     except Exception as e:
