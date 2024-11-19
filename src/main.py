@@ -8,7 +8,7 @@ from src.schemas import TransactionsCreate, TransactionsRead
 DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 engine = create_async_engine(url=DATABASE_URL)
-async_session_maker = async_sessionmaker(engine, expire_on_commit=False, echo=True)
+async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
 app = FastAPI(title='Information system for accounting household expenses')
 
@@ -21,6 +21,7 @@ async def get_db():
 
 @app.get("/transactions", response_model=list[TransactionsRead])
 async def get_transactions(session: AsyncSession = Depends(get_db)):
+
     query = select(Transaction).order_by(Transaction.id)
     result: Result = await session.execute(query)
     all_transactions = result.scalars().all()
