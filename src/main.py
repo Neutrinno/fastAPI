@@ -1,7 +1,6 @@
 from sqlalchemy import select, Result, update, delete
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sqlalchemy.orm import declarative_base
 from src.config import DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_NAME
 from src.models import Transaction
 from src.schemas import TransactionsCreate, TransactionsRead
@@ -9,9 +8,7 @@ from src.schemas import TransactionsCreate, TransactionsRead
 DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 engine = create_async_engine(url=DATABASE_URL)
-async_session_maker = async_sessionmaker(engine, expire_on_commit=False, echo = True)
-
-Base = declarative_base()
+async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
 app = FastAPI(title='Information system for accounting household expenses')
 
